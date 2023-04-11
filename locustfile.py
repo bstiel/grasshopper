@@ -46,6 +46,8 @@ class CeleryClient:
             task = self.client.AsyncResult(task.id)
             if task.status == "SUCCESS":
                 request_meta["response"] = task.get()
+            else:
+                request_meta["exception"] = task.status
         except Exception as e:
             request_meta["exception"] = e
         request_meta["response_time"] = (time.perf_counter() - start_perf_counter) * 1000
