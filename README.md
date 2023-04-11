@@ -12,7 +12,11 @@ pip install -r requirements.txt
 
 ## Usage
 
-Define your Celery load tests in `locustfile.py`. Inherit from `CeleryUser` which provides access to the Celery client via `self.client`. Invoke you Celery task via `send_task(name, [optional] args, [optional] kwargs)`.
+Define your Celery load tests in `locustfile.py`.
+
+Inherit from `CeleryUser` which provides access to the Celery client via `self.client`.
+
+Invoke you Celery task via `send_task(name, [optional] args, [optional] kwargs)`.
 
 ```python
 class CeleryTask(CeleryUser):
@@ -20,7 +24,7 @@ class CeleryTask(CeleryUser):
     
     @task
     def test_celery_task(self):
-        self.client.send_task("celery_task_name", args=[1, 2, 3], kwargs={"key1": "value1"})
+        self.client.send_task("celery_task", args=[1, 2, 3], kwargs={"key1": "value1"})
 ```
 
 
