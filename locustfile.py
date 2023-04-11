@@ -1,4 +1,5 @@
 import time
+import datetime
 from celery import Celery
 from locust import User, between, task, events
 
@@ -34,24 +35,16 @@ class CeleryClient:
             "context": {},
             "exception": None,
         }
-        start_perf_counter = time.perf_counter()
         try:
-            task = self.client.send_task(name, args=args, kwargs=kwargs)
-            t0 = time.time()
-            while self.client.AsyncResult(task.id).status == "PENDING":
-                t1 = time.time()
-                if self.task_timeout is not None and (t1 - t0) > self.task_timeout:
-                    raise ValueError(f"Celery soft task timeout [{name}]: no response after {round(t1 - t0, 1)}s")
-                time.sleep(0.05)
-            task = self.client.AsyncResult(task.id)
-            if task.status == "SUCCESS":
-                request_meta["response"] = task.get()
-            else:
-                request_meta["exception"] = task.status
+            t0 = datetime.datetime.utcnow()
+            async_result = self.client.send_task(name, args=args, kwargs=kwargs)
+            result = async_result.get(self.task_timeout)  # blocking
+            request_meta["response"] = result
         except Exception as e:
             request_meta["exception"] = e
-        request_meta["response_time"] = (time.perf_counter() - start_perf_counter) * 1000
-        self._request_event.fire(**request_meta)  # This is what makes the request actually get logged in Locust
+
+        request_meta["response_time"] = (async_result.date_done - t0).total_seconds() * 1000
+        self._request_event.fire(**request_meta)  # this is what makes the request actually get logged in Locust
         return request_meta["response"]
 
 
