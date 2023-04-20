@@ -1,5 +1,6 @@
 import time
 import datetime
+import ssl
 from celery import Celery
 from locust import User, between, task, events
 
@@ -21,7 +22,17 @@ class CeleryClient:
     """
 
     def __init__(self, broker, backend, task_timeout, request_event):
-        self.client = Celery(broker=broker, backend=backend)
+        kwargs = {
+            "broker": broker,
+            "backend": backend
+        }
+        if broker.startswith("rediss://"):
+            kwargs["broker_use_ssl"] = {"ssl_cert_reqs": ssl.CERT_NONE}
+
+        if backend.startswith("rediss://"):
+            kwargs["redis_backend_use_ssl"] = {"ssl_cert_reqs": ssl.CERT_NONE}
+
+        self.client = Celery(**kwargs)
         self.task_timeout = task_timeout
         self._request_event = request_event
 
