@@ -35,15 +35,17 @@ class CeleryClient:
             "context": {},
             "exception": None,
         }
+        t0 = datetime.datetime.utcnow()
         try:
-            t0 = datetime.datetime.utcnow()
             async_result = self.client.send_task(name, args=args, kwargs=kwargs)
             result = async_result.get(self.task_timeout)  # blocking
             request_meta["response"] = result
+            t1 = async_result.date_done
         except Exception as e:
+            t1 = None
             request_meta["exception"] = e
 
-        request_meta["response_time"] = (async_result.date_done - t0).total_seconds() * 1000
+        request_meta["response_time"] = None if not t1 else (t1 - t0).total_seconds() * 1000
         self._request_event.fire(**request_meta)  # this is what makes the request actually get logged in Locust
         return request_meta["response"]
 
@@ -65,5 +67,9 @@ class CeleryTask(CeleryUser):
     wait_time = between(0.1, 0.5)
     
     @task
-    def test_celery_task(self):
-        self.client.send_task("celery_task_name", args=[1, 2, 3], kwargs={"key1": "value1"})
+    def test_request1(self):
+        self.client.send_task("request1")
+
+    # @task
+    # def test_request2(self):
+    #     self.client.send_task("request2")
